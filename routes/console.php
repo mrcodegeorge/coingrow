@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('coingrow:run-automations')->hourly();
+Schedule::command('coingrow:refresh-insights')->daily();

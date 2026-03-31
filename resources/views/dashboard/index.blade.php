@@ -134,6 +134,49 @@
             </div>
         </section>
 
+        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Phase 3</p>
+                    <h2 class="mt-2 text-2xl font-semibold text-white">Financial intelligence</h2>
+                </div>
+                <div class="text-sm text-slate-400">Smart recommendations from your recent activity</div>
+            </div>
+
+            <div class="mt-6 grid gap-4 lg:grid-cols-4">
+                <div class="glass-card">
+                    <div class="metric-label">Avg monthly income</div>
+                    <div class="metric-value">${{ number_format($insights['predictive']['avgMonthlyIncome'], 2) }}</div>
+                    <p class="metric-copy">Based on recent deposit history.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="metric-label">Avg monthly expenses</div>
+                    <div class="metric-value">${{ number_format($insights['predictive']['avgMonthlyExpense'], 2) }}</div>
+                    <p class="metric-copy">Rolling outgoing average from the last 90 days.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="metric-label">Monthly burn rate</div>
+                    <div class="metric-value">${{ number_format($insights['predictive']['burnRate'], 2) }}</div>
+                    <p class="metric-copy">Projected expense pace if current patterns hold.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="metric-label">Runway</div>
+                    <div class="metric-value">{{ $insights['predictive']['runwayDays'] > 999 ? 'Stable' : $insights['predictive']['runwayDays'] . ' days' }}</div>
+                    <p class="metric-copy">How long your main balance may last at the current burn rate.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 lg:grid-cols-2">
+                @foreach ($insights['cards'] as $insight)
+                    <article class="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5">
+                        <div class="text-xs uppercase tracking-[0.25em] text-cyan-200/70">{{ strtoupper($insight['type']) }}</div>
+                        <h3 class="mt-3 text-lg font-semibold text-white">{{ $insight['title'] }}</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-300">{{ $insight['message'] }}</p>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
         <section class="grid gap-6 lg:grid-cols-2">
             <div class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
                 <div class="flex items-center justify-between">

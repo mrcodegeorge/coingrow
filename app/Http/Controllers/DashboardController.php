@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AutoSavingsRule;
+use App\Models\FinancialInsight;
 use App\Models\ScheduledTransaction;
 use App\Models\Transaction;
 use App\Services\AnalyticsService;
+use App\Services\FinancialInsightsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,7 +15,8 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected AnalyticsService $analyticsService
+        protected AnalyticsService $analyticsService,
+        protected FinancialInsightsService $financialInsightsService
     ) {
     }
 
@@ -27,6 +30,7 @@ class DashboardController extends Controller
         $transactions = $this->transactionsFor($request);
         $splitTotal = $account->subAccounts->sum(fn ($subAccount) => (float) ($subAccount->paymentSplit?->percentage ?? 0));
         $analytics = $this->analyticsService->dashboardFor($account);
+        $insights = $this->financialInsightsService->buildDashboardInsights($account);
 
         return view('dashboard.index', [
             'account' => $account,
@@ -39,6 +43,7 @@ class DashboardController extends Controller
             ],
             'splitTotal' => round($splitTotal, 2),
             'analytics' => $analytics,
+            'insights' => $insights,
             'notifications' => $user->notifications()->latest()->limit(6)->get(),
             'unreadNotifications' => $user->unreadNotifications()->count(),
             'transactionCategories' => Transaction::CATEGORY_OPTIONS,

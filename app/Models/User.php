@@ -61,4 +61,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ScheduledTransaction::class);
     }
+
+    public function financialInsights(): HasMany
+    {
+        return $this->hasMany(FinancialInsight::class);
+    }
 }
