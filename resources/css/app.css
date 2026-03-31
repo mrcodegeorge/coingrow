@@ -6,15 +6,14 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 @utility bg-app {
     background:
-        radial-gradient(circle at top left, rgba(34, 211, 238, 0.18), transparent 34%),
-        radial-gradient(circle at right center, rgba(16, 185, 129, 0.14), transparent 24%),
-        linear-gradient(135deg, #07111f 0%, #0f1d33 45%, #081018 100%);
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.8), transparent 30%),
+        linear-gradient(180deg, #eef0ea 0%, #e7e2d9 100%);
 }
 
 body {
@@ -25,104 +24,43 @@ body {
     display: none !important;
 }
 
-.orb {
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(80px);
-    opacity: 0.6;
-}
-
-.orb-one {
-    left: -6rem;
-    top: -5rem;
-    height: 15rem;
-    width: 15rem;
-    background: rgba(34, 211, 238, 0.28);
-}
-
-.orb-two {
-    bottom: -2rem;
-    right: -4rem;
-    height: 18rem;
-    width: 18rem;
-    background: rgba(16, 185, 129, 0.2);
-}
-
-.grid-fade {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 3rem 3rem;
-    mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
-}
-
 .btn-primary,
 .btn-secondary,
 .btn-danger {
-    @apply inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-medium transition duration-200;
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-medium transition duration-200 ease-out;
 }
 
 .btn-primary {
-    @apply bg-cyan-300 text-slate-950 hover:bg-cyan-200;
+    @apply bg-slate-950 text-white shadow-sm hover:-translate-y-0.5 hover:bg-slate-800;
 }
 
 .btn-secondary {
-    @apply border border-white/15 bg-white/5 text-white hover:bg-white/10;
+    @apply border border-stone-300 bg-white text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-stone-50;
 }
 
 .btn-danger {
-    @apply border border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20;
+    @apply border border-rose-200 bg-rose-50 text-rose-600 shadow-sm hover:-translate-y-0.5 hover:bg-rose-100;
 }
 
 .form-label {
-    @apply mb-2 block text-sm font-medium text-slate-300;
+    @apply mb-2 block text-sm font-medium text-slate-600;
 }
 
 .form-input,
 .filter-select {
-    @apply w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-300/40;
-}
-
-.glass-card {
-    @apply rounded-[1.5rem] border border-white/10 bg-white/5 p-4;
-}
-
-.metric-label {
-    @apply text-xs uppercase tracking-[0.25em] text-slate-400;
-}
-
-.metric-value {
-    @apply mt-3 text-2xl font-semibold text-white;
-}
-
-.metric-copy {
-    @apply mt-2 text-sm leading-6 text-slate-400;
-}
-
-.mini-stat {
-    @apply rounded-2xl border border-white/10 bg-white/5 p-4;
-}
-
-.mini-stat-label {
-    @apply block text-xs uppercase tracking-[0.2em] text-slate-500;
-}
-
-.mini-stat-value {
-    @apply mt-2 block text-sm font-medium text-white;
+    @apply w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:border-slate-950;
 }
 
 .modal-shell {
-    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm;
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-950/25 p-4 backdrop-blur-sm;
 }
 
 .modal-card {
-    @apply w-full max-w-lg rounded-[2rem] border border-white/10 bg-slate-950 p-6 shadow-2xl shadow-cyan-950/30;
+    @apply w-full max-w-lg rounded-[1.75rem] border border-stone-200 bg-[#fcfbf8] p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)];
 }
 
 .modal-card-wide {
-    @apply max-w-2xl;
+    @apply max-w-3xl;
 }
 
 .modal-head {
@@ -130,9 +68,131 @@ body {
 }
 
 .modal-title {
-    @apply text-xl font-semibold text-white;
+    @apply text-xl font-semibold text-slate-950;
 }
 
 .modal-close {
-    @apply text-sm text-slate-400 hover:text-white;
+    @apply text-sm text-slate-500 hover:text-slate-900;
+}
+
+.fin-shell {
+    @apply flex min-h-[calc(100vh-2rem)] overflow-hidden rounded-[2rem] border border-stone-200 bg-[#f7f4ed] shadow-[0_30px_100px_rgba(15,23,42,0.10)];
+}
+
+.fin-sidebar {
+    @apply flex w-[88px] shrink-0 flex-col items-center gap-5 bg-[#1e1f1d] px-4 py-6 text-stone-300;
+}
+
+.sidebar-icon {
+    @apply flex h-11 w-11 items-center justify-center rounded-2xl transition duration-200;
+}
+
+.sidebar-icon-active {
+    @apply bg-[#f4efe5] text-slate-950 shadow-sm;
+}
+
+.sidebar-icon-muted {
+    @apply text-stone-400 hover:bg-white/5 hover:text-white;
+}
+
+.fin-main {
+    @apply flex-1 bg-[#f7f4ed];
+}
+
+.fin-center {
+    @apply min-w-0 flex-1 px-5 py-5 lg:px-7 lg:py-7;
+}
+
+.fin-right {
+    @apply w-full border-t border-stone-200 bg-[#fcfbf8] p-5 lg:w-[360px] lg:border-l lg:border-t-0 lg:p-7;
+}
+
+.fin-card {
+    @apply rounded-[1.5rem] border border-stone-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)];
+}
+
+.fin-stat-card {
+    @apply rounded-[1.35rem] border border-stone-300 bg-[#f9f7f2] p-5 shadow-sm transition duration-200 hover:-translate-y-0.5;
+}
+
+.fin-stat-label {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-slate-500;
+}
+
+.mini-bar {
+    @apply block w-2 rounded-full;
+}
+
+.balance-copy-label {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-slate-500;
+}
+
+.tiny-detail {
+    @apply text-sm text-slate-500;
+}
+
+.summary-chip {
+    @apply inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600;
+}
+
+.info-tile {
+    @apply rounded-[1.25rem] border border-stone-200 bg-[#faf8f4] p-4;
+}
+
+.info-tile-label {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+}
+
+.info-tile-value {
+    @apply mt-3 text-lg font-semibold text-slate-950;
+}
+
+.progress-track {
+    @apply mt-4 h-2 overflow-hidden rounded-full bg-stone-200;
+}
+
+.progress-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300;
+}
+
+.transaction-row {
+    @apply flex items-center justify-between gap-3 rounded-[1.15rem] border border-stone-200 bg-white px-3 py-3 transition duration-200 hover:bg-stone-50;
+}
+
+.transaction-avatar {
+    @apply flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold;
+}
+
+.soft-link {
+    @apply text-sm font-semibold text-slate-500 transition hover:text-slate-900;
+}
+
+.dark-card-preview {
+    background:
+        radial-gradient(circle at top right, rgba(255,255,255,0.1), transparent 22%),
+        linear-gradient(135deg, #111111 0%, #1e1e1e 55%, #292524 100%);
+}
+
+.skeleton-bar {
+    @apply animate-pulse rounded-full bg-stone-200;
+}
+
+@media (max-width: 1023px) {
+    .fin-shell {
+        @apply flex-col;
+    }
+
+    .fin-sidebar {
+        @apply h-auto w-full flex-row justify-between overflow-x-auto rounded-t-[2rem] rounded-b-none px-5 py-4;
+    }
+}
+
+@media (max-width: 767px) {
+    .fin-center {
+        @apply px-4 py-4;
+    }
+
+    .fin-right {
+        @apply p-4;
+    }
 }
