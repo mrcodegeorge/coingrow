@@ -22,6 +22,7 @@ class TransactionLoggerService
             'sub_account_id' => $subAccount?->id,
             'related_sub_account_id' => $context['related_sub_account_id'] ?? null,
             'type' => $type,
+            'external_reference' => $context['external_reference'] ?? null,
             'category' => $context['category'] ?? null,
             'amount' => number_format($amount, 2, '.', ''),
             'balance_after' => number_format($balanceAfter, 2, '.', ''),

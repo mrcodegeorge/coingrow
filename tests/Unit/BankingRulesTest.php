@@ -18,10 +18,7 @@ class BankingRulesTest extends TestCase
     public function test_locked_sub_accounts_cannot_be_withdrawn_from(): void
     {
         $user = User::factory()->create();
-        $account = Account::create([
-            'user_id' => $user->id,
-            'balance' => 0,
-        ]);
+        $account = app(BankingService::class)->createPrimaryAccountForUser($user);
 
         $subAccount = SubAccount::create([
             'account_id' => $account->id,
@@ -39,10 +36,7 @@ class BankingRulesTest extends TestCase
     public function test_transfers_move_money_and_log_both_sides(): void
     {
         $user = User::factory()->create();
-        $account = Account::create([
-            'user_id' => $user->id,
-            'balance' => 0,
-        ]);
+        $account = app(BankingService::class)->createPrimaryAccountForUser($user);
 
         $source = SubAccount::create([
             'account_id' => $account->id,

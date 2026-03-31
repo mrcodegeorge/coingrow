@@ -29,6 +29,7 @@ class Transaction extends Model
         'sub_account_id',
         'related_sub_account_id',
         'type',
+        'external_reference',
         'category',
         'amount',
         'balance_after',

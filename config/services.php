@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'coingrow' => [
+        'webhook_secret' => env('COINGROW_WEBHOOK_SECRET'),
+    ],
+
 ];

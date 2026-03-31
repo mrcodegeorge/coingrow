@@ -2,12 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Models\Account;
 use App\Models\AutoSavingsRule;
 use App\Models\ScheduledTransaction;
 use App\Models\SubAccount;
 use App\Models\User;
 use App\Services\AutomationService;
+use App\Services\BankingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,7 +18,7 @@ class AutomationServiceTest extends TestCase
     public function test_per_deposit_auto_savings_moves_money_into_target_wallet(): void
     {
         $user = User::factory()->create();
-        $account = Account::create(['user_id' => $user->id, 'balance' => 0]);
+        $account = app(BankingService::class)->createPrimaryAccountForUser($user);
         $wallet = SubAccount::create([
             'account_id' => $account->id,
             'name' => 'Emergency',
@@ -45,7 +45,8 @@ class AutomationServiceTest extends TestCase
     public function test_due_scheduled_deposit_moves_money_from_main_to_wallet(): void
     {
         $user = User::factory()->create();
-        $account = Account::create(['user_id' => $user->id, 'balance' => 300]);
+        $account = app(BankingService::class)->createPrimaryAccountForUser($user);
+        $account->update(['balance' => 300]);
         $wallet = SubAccount::create([
             'account_id' => $account->id,
             'name' => 'Rent',

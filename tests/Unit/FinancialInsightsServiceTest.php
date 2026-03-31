@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Models\Account;
 use App\Models\User;
 use App\Services\BankingService;
 use App\Services\FinancialInsightsService;
@@ -16,7 +15,7 @@ class FinancialInsightsServiceTest extends TestCase
     public function test_it_builds_predictive_metrics_and_recommendations(): void
     {
         $user = User::factory()->create();
-        $account = Account::create(['user_id' => $user->id, 'balance' => 0]);
+        $account = app(BankingService::class)->createPrimaryAccountForUser($user);
 
         $emergency = app(BankingService::class)->createSubAccount($account, 'Emergency', 1000, false, 30);
         $rent = app(BankingService::class)->createSubAccount($account, 'Rent', 500, false, 20);

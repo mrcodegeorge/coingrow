@@ -8,6 +8,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\PaymentSplitController;
 use App\Http\Controllers\SubAccountController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -43,3 +44,5 @@ Route::middleware('auth')->group(function () {
     Route::put('/payment-splits', [PaymentSplitController::class, 'update'])->name('payment-splits.update');
     Route::delete('/payment-splits', [PaymentSplitController::class, 'clear'])->name('payment-splits.clear');
 });
+
+Route::post('/webhook/deposit', [WebhookController::class, 'handleDeposit'])->name('webhook.deposit');

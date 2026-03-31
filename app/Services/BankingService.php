@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\PaymentSplit;
 use App\Models\SubAccount;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -13,15 +14,20 @@ class BankingService
 {
     public function __construct(
         protected TransactionLoggerService $logger,
-        protected UserNotificationService $notificationService
+        protected UserNotificationService $notificationService,
+        protected VirtualAccountService $virtualAccountService
     ) {
     }
 
-    public function createPrimaryAccountForUser(int $userId): Account
+    public function createPrimaryAccountForUser(User $user): Account
     {
         return Account::create([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'balance' => 0,
+            'account_number' => $this->virtualAccountService->generateAccountNumber(),
+            'account_name' => $this->virtualAccountService->generateAccountName($user),
+            'bank_name' => 'COINGROW DIGITAL',
+            'provider' => 'internal',
         ]);
     }
 

@@ -66,8 +66,8 @@ class AuthController extends Controller
                 'password' => $validated['password'],
             ]);
 
-            $account = $this->bankingService->createPrimaryAccountForUser($user->id);
-            $this->logger->log($account, 'account_created', 0, 0, 'Primary account created during registration.');
+            $account = $this->bankingService->createPrimaryAccountForUser($user);
+            $this->logger->log($account, 'account_created', 0, 0, 'Virtual account created during registration.');
 
             return $user;
         });

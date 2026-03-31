@@ -435,6 +435,34 @@
                         <div class="text-3xl font-semibold tracking-tight text-slate-950">${{ number_format((float) $account->balance, 2) }}</div>
                     </x-card>
 
+                    <x-card padding="p-5" title="Virtual Account" subtitle="Use this account to deposit money into COINGROW">
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Account Name</div>
+                                <div class="mt-2 text-base font-semibold text-slate-950">{{ $account->account_name }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Account Number</div>
+                                <div class="mt-2 flex items-center justify-between gap-3">
+                                    <div class="text-xl font-semibold tracking-[0.24em] text-slate-950">{{ $account->account_number }}</div>
+                                    <button
+                                        type="button"
+                                        class="btn-secondary !px-3 !py-2"
+                                        @click="copyAccountNumber('{{ $account->account_number }}')"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="rounded-[1.15rem] border border-stone-200 bg-[#faf8f4] p-4">
+                                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bank / Provider</div>
+                                <div class="mt-2 text-sm font-medium text-slate-900">{{ $account->bank_name ?? 'COINGROW DIGITAL' }}</div>
+                                <div class="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">{{ $account->provider ?? 'internal' }}</div>
+                            </div>
+                            <button type="button" class="btn-primary w-full" @click="openModal('main-deposit')">Fund Account</button>
+                        </div>
+                    </x-card>
+
                     <x-card padding="p-5" title="Transactions" subtitle="Most recent money movement">
                         <x-slot:actions>
                             <a href="#transactions" class="soft-link">View all</a>
@@ -797,6 +825,13 @@
                     this.transferUrl = url;
                     this.transferLabel = `Transfer from ${walletName}`;
                     this.modal = 'transfer';
+                },
+                async copyAccountNumber(accountNumber) {
+                    if (! navigator.clipboard) {
+                        return;
+                    }
+
+                    await navigator.clipboard.writeText(accountNumber);
                 },
             };
         }

@@ -26,8 +26,8 @@ class DemoDataSeeder extends Seeder
             /** @var TransactionLoggerService $logger */
             $logger = app(TransactionLoggerService::class);
 
-            $account = $bankingService->createPrimaryAccountForUser($user->id);
-            $logger->log($account, 'account_created', 0, 0, 'Demo primary account created.');
+            $account = $bankingService->createPrimaryAccountForUser($user);
+            $logger->log($account, 'account_created', 0, 0, 'Demo virtual account created.');
 
             $emergency = $bankingService->createSubAccount($account, 'Emergency Fund', 5000, true, 40);
             $rent = $bankingService->createSubAccount($account, 'Rent Wallet', 2500, false, 25);
