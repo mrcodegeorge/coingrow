@@ -12,7 +12,8 @@ use InvalidArgumentException;
 class BankingService
 {
     public function __construct(
-        protected TransactionLoggerService $logger
+        protected TransactionLoggerService $logger,
+        protected UserNotificationService $notificationService
     ) {
     }
 
@@ -56,16 +57,16 @@ class BankingService
         });
     }
 
-    public function depositToMain(Account $account, float $amount, string $description = 'Main account deposit.'): Account
+    public function depositToMain(Account $account, float $amount, array $context = [], string $description = 'Main account deposit.'): Account
     {
         $this->assertPositiveAmount($amount);
 
-        return DB::transaction(function () use ($account, $amount, $description) {
+        return DB::transaction(function () use ($account, $amount, $context, $description) {
             $account->refresh();
             $account->balance = (float) $account->balance + $amount;
             $account->save();
 
-            $this->logger->log($account, 'deposit', $amount, (float) $account->balance, $description);
+            $this->logger->log($account, 'deposit', $amount, (float) $account->balance, $description, null, $context);
 
             $splits = $account->subAccounts()
                 ->with('paymentSplit')
@@ -76,15 +77,24 @@ class BankingService
                 $this->applyPaymentSplits($account, $amount, $splits);
             }
 
+            DB::afterCommit(function () use ($account, $amount) {
+                $this->notificationService->notify(
+                    $account->user,
+                    'Deposit received',
+                    sprintf('%.2f was deposited into your main account.', $amount),
+                    'success'
+                );
+            });
+
             return $account->fresh(['subAccounts.paymentSplit']);
         });
     }
 
-    public function withdrawFromMain(Account $account, float $amount, string $description = 'Main account withdrawal.'): Account
+    public function withdrawFromMain(Account $account, float $amount, array $context = [], string $description = 'Main account withdrawal.'): Account
     {
         $this->assertPositiveAmount($amount);
 
-        return DB::transaction(function () use ($account, $amount, $description) {
+        return DB::transaction(function () use ($account, $amount, $context, $description) {
             $account->refresh();
 
             if ((float) $account->balance < $amount) {
@@ -94,17 +104,28 @@ class BankingService
             $account->balance = (float) $account->balance - $amount;
             $account->save();
 
-            $this->logger->log($account, 'withdrawal', $amount, (float) $account->balance, $description);
+            $this->logger->log($account, 'withdrawal', $amount, (float) $account->balance, $description, null, $context);
+
+            if ((float) $account->balance <= 100) {
+                DB::afterCommit(function () use ($account) {
+                    $this->notificationService->notify(
+                        $account->user,
+                        'Low balance alert',
+                        sprintf('Your main balance is now %.2f.', (float) $account->balance),
+                        'warning'
+                    );
+                });
+            }
 
             return $account->fresh();
         });
     }
 
-    public function depositToSubAccount(SubAccount $subAccount, float $amount, string $description = 'Sub-account deposit.'): SubAccount
+    public function depositToSubAccount(SubAccount $subAccount, float $amount, array $context = [], string $description = 'Sub-account deposit.'): SubAccount
     {
         $this->assertPositiveAmount($amount);
 
-        return DB::transaction(function () use ($subAccount, $amount, $description) {
+        return DB::transaction(function () use ($subAccount, $amount, $context, $description) {
             $subAccount->refresh();
             $subAccount->balance = (float) $subAccount->balance + $amount;
             $subAccount->save();
@@ -115,20 +136,30 @@ class BankingService
                 $amount,
                 (float) $subAccount->balance,
                 $description,
-                $subAccount
+                $subAccount,
+                $context
             );
 
             $this->autoUnlockIfEligible($subAccount);
+
+            DB::afterCommit(function () use ($subAccount, $amount) {
+                $this->notificationService->notify(
+                    $subAccount->account->user,
+                    'Savings wallet funded',
+                    sprintf('%.2f was added to %s.', $amount, $subAccount->name),
+                    'success'
+                );
+            });
 
             return $subAccount->fresh(['paymentSplit']);
         });
     }
 
-    public function withdrawFromSubAccount(SubAccount $subAccount, float $amount, string $description = 'Sub-account withdrawal.'): SubAccount
+    public function withdrawFromSubAccount(SubAccount $subAccount, float $amount, array $context = [], string $description = 'Sub-account withdrawal.'): SubAccount
     {
         $this->assertPositiveAmount($amount);
 
-        return DB::transaction(function () use ($subAccount, $amount, $description) {
+        return DB::transaction(function () use ($subAccount, $amount, $context, $description) {
             $subAccount->refresh();
 
             if ($subAccount->locked) {
@@ -148,10 +179,90 @@ class BankingService
                 $amount,
                 (float) $subAccount->balance,
                 $description,
-                $subAccount
+                $subAccount,
+                $context
             );
 
             return $subAccount->fresh(['paymentSplit']);
+        });
+    }
+
+    public function transferBetweenSubAccounts(
+        SubAccount $fromSubAccount,
+        SubAccount $toSubAccount,
+        float $amount,
+        array $context = []
+    ): array {
+        $this->assertPositiveAmount($amount);
+
+        return DB::transaction(function () use ($fromSubAccount, $toSubAccount, $amount, $context) {
+            $fromSubAccount->refresh();
+            $toSubAccount->refresh();
+
+            if ($fromSubAccount->account_id !== $toSubAccount->account_id) {
+                throw new InvalidArgumentException('Transfers are only allowed within your own sub-accounts.');
+            }
+
+            if ($fromSubAccount->id === $toSubAccount->id) {
+                throw new InvalidArgumentException('Choose different source and destination wallets.');
+            }
+
+            if ($fromSubAccount->locked) {
+                throw new InvalidArgumentException('Locked sub-accounts cannot transfer funds out.');
+            }
+
+            if ((float) $fromSubAccount->balance < $amount) {
+                throw new InvalidArgumentException('Insufficient balance in the source sub-account.');
+            }
+
+            $fromSubAccount->balance = round((float) $fromSubAccount->balance - $amount, 2);
+            $fromSubAccount->save();
+
+            $this->logger->log(
+                $fromSubAccount->account,
+                'transfer',
+                $amount,
+                (float) $fromSubAccount->balance,
+                "Transfer sent from {$fromSubAccount->name} to {$toSubAccount->name}.",
+                $fromSubAccount,
+                array_merge($context, [
+                    'category' => $context['category'] ?? 'transfer',
+                    'related_sub_account_id' => $toSubAccount->id,
+                    'tags' => array_values(array_unique(array_merge($context['tags'] ?? [], ['transfer_out']))),
+                ])
+            );
+
+            $this->logger->log(
+                $toSubAccount->account,
+                'transfer',
+                $amount,
+                (float) $toSubAccount->balance + $amount,
+                "Transfer received from {$fromSubAccount->name} into {$toSubAccount->name}.",
+                $toSubAccount,
+                array_merge($context, [
+                    'category' => $context['category'] ?? 'transfer',
+                    'related_sub_account_id' => $fromSubAccount->id,
+                    'tags' => array_values(array_unique(array_merge($context['tags'] ?? [], ['transfer_in']))),
+                ])
+            );
+
+            $toSubAccount->balance = round((float) $toSubAccount->balance + $amount, 2);
+            $toSubAccount->save();
+            $this->autoUnlockIfEligible($toSubAccount);
+
+            DB::afterCommit(function () use ($fromSubAccount, $toSubAccount, $amount) {
+                $this->notificationService->notify(
+                    $fromSubAccount->account->user,
+                    'Wallet transfer complete',
+                    sprintf('%.2f moved from %s to %s.', $amount, $fromSubAccount->name, $toSubAccount->name),
+                    'info'
+                );
+            });
+
+            return [
+                'from' => $fromSubAccount->fresh(['paymentSplit']),
+                'to' => $toSubAccount->fresh(['paymentSplit']),
+            ];
         });
     }
 
@@ -322,6 +433,15 @@ class BankingService
             "Auto-unlocked {$subAccount->name} after reaching its target.",
             $subAccount
         );
+
+        DB::afterCommit(function () use ($subAccount) {
+            $this->notificationService->notify(
+                $subAccount->account->user,
+                'Goal unlocked',
+                sprintf('%s has reached its target and is now unlocked.', $subAccount->name),
+                'success'
+            );
+        });
     }
 
     protected function upsertPaymentSplit(Account $account, SubAccount $subAccount, float $percentage): void

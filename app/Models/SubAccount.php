@@ -57,4 +57,44 @@ class SubAccount extends Model
     {
         return $this->locked && $this->target !== null && (float) $this->balance >= (float) $this->target;
     }
+
+    public function remainingToTarget(): float
+    {
+        if (! $this->target) {
+            return 0.0;
+        }
+
+        return max(round((float) $this->target - (float) $this->balance, 2), 0);
+    }
+
+    public function estimatedCompletionLabel(): string
+    {
+        if (! $this->target || $this->remainingToTarget() <= 0) {
+            return 'Target reached';
+        }
+
+        $monthlySavingsRate = (float) $this->transactions()
+            ->whereIn('type', ['sub_account_deposit', 'auto_split_in', 'transfer'])
+            ->where('created_at', '>=', now()->subDays(90))
+            ->get()
+            ->sum(function (Transaction $transaction) {
+                $direction = collect($transaction->tags ?? []);
+
+                if ($transaction->type === 'transfer' && $direction->contains('transfer_out')) {
+                    return -1 * (float) $transaction->amount;
+                }
+
+                return (float) $transaction->amount;
+            }) / 3;
+
+        if ($monthlySavingsRate <= 0) {
+            return 'Needs more funding history';
+        }
+
+        $monthsRemaining = ceil($this->remainingToTarget() / $monthlySavingsRate);
+
+        return $monthsRemaining <= 1
+            ? 'About 1 month left'
+            : "About {$monthsRemaining} months left";
+    }
 }

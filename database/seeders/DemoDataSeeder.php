@@ -31,13 +31,14 @@ class DemoDataSeeder extends Seeder
             $rent = $bankingService->createSubAccount($account, 'Rent Wallet', 2500, false, 25);
             $travel = $bankingService->createSubAccount($account, 'Travel Vault', 4000, true, 15);
 
-            $bankingService->depositToMain($account, 3000, 'Initial salary funding.');
-            $bankingService->depositToSubAccount($emergency, 250, 'Manual top-up for emergency fund.');
-            $bankingService->withdrawFromMain($account, 180, 'Utility bill payment.');
-            $bankingService->depositToSubAccount($rent, 120, 'Additional rent reserve.');
-            $bankingService->depositToMain($account, 1500, 'Freelance income.');
-            $bankingService->withdrawFromSubAccount($rent->fresh(), 100, 'Partial rent payment.');
-            $bankingService->depositToSubAccount($travel, 700, 'Trip planning contribution.');
+            $bankingService->depositToMain($account, 3000, ['category' => 'income', 'tags' => ['salary']], 'Initial salary funding.');
+            $bankingService->depositToSubAccount($emergency, 250, ['category' => 'savings', 'tags' => ['manual_top_up']], 'Manual top-up for emergency fund.');
+            $bankingService->withdrawFromMain($account, 180, ['category' => 'utilities', 'tags' => ['bill']], 'Utility bill payment.');
+            $bankingService->depositToSubAccount($rent, 120, ['category' => 'rent', 'tags' => ['reserve']], 'Additional rent reserve.');
+            $bankingService->depositToMain($account, 1500, ['category' => 'income', 'tags' => ['freelance']], 'Freelance income.');
+            $bankingService->withdrawFromSubAccount($rent->fresh(), 100, ['category' => 'rent', 'tags' => ['payment']], 'Partial rent payment.');
+            $bankingService->depositToSubAccount($travel, 700, ['category' => 'savings', 'tags' => ['travel_goal']], 'Trip planning contribution.');
+            $bankingService->transferBetweenSubAccounts($rent->fresh(), $travel->fresh(), 150, ['category' => 'transfer', 'note' => 'Rebalanced rent reserve into travel fund.', 'tags' => ['rebalance']]);
         });
     }
 }

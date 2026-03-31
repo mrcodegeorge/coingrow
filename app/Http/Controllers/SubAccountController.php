@@ -49,10 +49,13 @@ class SubAccountController extends Controller
         $this->authorizeSubAccount($request, $subAccount);
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'tags' => ['nullable', 'string', 'max:255'],
         ]);
 
         try {
-            $this->bankingService->depositToSubAccount($subAccount, (float) $validated['amount']);
+            $this->bankingService->depositToSubAccount($subAccount, (float) $validated['amount'], $this->buildContext($validated));
 
             return back()->with('status', "Funds added to {$subAccount->name}.");
         } catch (InvalidArgumentException $exception) {
@@ -67,16 +70,49 @@ class SubAccountController extends Controller
         $this->authorizeSubAccount($request, $subAccount);
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'tags' => ['nullable', 'string', 'max:255'],
         ]);
 
         try {
-            $this->bankingService->withdrawFromSubAccount($subAccount, (float) $validated['amount']);
+            $this->bankingService->withdrawFromSubAccount($subAccount, (float) $validated['amount'], $this->buildContext($validated));
 
             return back()->with('status', "Funds withdrawn from {$subAccount->name}.");
         } catch (InvalidArgumentException $exception) {
             return back()->withErrors(["sub_withdraw_{$subAccount->id}" => $exception->getMessage()]);
         } catch (Throwable) {
             return back()->withErrors(["sub_withdraw_{$subAccount->id}" => 'Withdrawal could not be processed.']);
+        }
+    }
+
+    public function transfer(Request $request, SubAccount $subAccount): RedirectResponse
+    {
+        $this->authorizeSubAccount($request, $subAccount);
+        $validated = $request->validate([
+            'destination_sub_account_id' => ['required', 'integer'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'tags' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $destination = $request->user()->account->subAccounts()
+            ->findOrFail((int) $validated['destination_sub_account_id']);
+
+        try {
+            $this->bankingService->transferBetweenSubAccounts(
+                $subAccount,
+                $destination,
+                (float) $validated['amount'],
+                $this->buildContext($validated)
+            );
+
+            return back()->with('status', "Funds moved from {$subAccount->name} to {$destination->name}.");
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(["sub_transfer_{$subAccount->id}" => $exception->getMessage()]);
+        } catch (Throwable) {
+            return back()->withErrors(["sub_transfer_{$subAccount->id}" => 'Transfer could not be processed.']);
         }
     }
 
@@ -116,5 +152,18 @@ class SubAccountController extends Controller
     protected function authorizeSubAccount(Request $request, SubAccount $subAccount): void
     {
         abort_unless($subAccount->account_id === $request->user()->account->id, 404);
+    }
+
+    protected function buildContext(array $validated): array
+    {
+        return [
+            'category' => $validated['category'] ?? null,
+            'note' => $validated['note'] ?? null,
+            'tags' => collect(explode(',', $validated['tags'] ?? ''))
+                ->map(fn (string $tag) => trim($tag))
+                ->filter()
+                ->values()
+                ->all(),
+        ];
     }
 }

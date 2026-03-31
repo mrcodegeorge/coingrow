@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\AnalyticsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        protected AnalyticsService $analyticsService
+    ) {
+    }
+
     public function __invoke(Request $request): View
     {
         $user = $request->user();
@@ -18,6 +24,7 @@ class DashboardController extends Controller
 
         $transactions = $this->transactionsFor($request);
         $splitTotal = $account->subAccounts->sum(fn ($subAccount) => (float) ($subAccount->paymentSplit?->percentage ?? 0));
+        $analytics = $this->analyticsService->dashboardFor($account);
 
         return view('dashboard.index', [
             'account' => $account,
@@ -26,8 +33,13 @@ class DashboardController extends Controller
             'filters' => [
                 'mode' => $request->string('mode', 'all')->toString(),
                 'account' => $request->string('account', 'all')->toString(),
+                'category' => $request->string('category', 'all')->toString(),
             ],
             'splitTotal' => round($splitTotal, 2),
+            'analytics' => $analytics,
+            'notifications' => $user->notifications()->latest()->limit(6)->get(),
+            'unreadNotifications' => $user->unreadNotifications()->count(),
+            'transactionCategories' => Transaction::CATEGORY_OPTIONS,
         ]);
     }
 
@@ -36,9 +48,10 @@ class DashboardController extends Controller
         $account = $request->user()->account;
         $mode = $request->string('mode', 'all')->toString();
         $accountFilter = $request->string('account', 'all')->toString();
+        $category = $request->string('category', 'all')->toString();
 
         $query = Transaction::query()
-            ->with('subAccount')
+            ->with(['subAccount', 'relatedSubAccount'])
             ->where('account_id', $account->id)
             ->latest();
 
@@ -46,6 +59,10 @@ class DashboardController extends Controller
             $query->whereNull('sub_account_id');
         } elseif (str_starts_with($accountFilter, 'sub:')) {
             $query->where('sub_account_id', (int) str_replace('sub:', '', $accountFilter));
+        }
+
+        if ($category !== 'all') {
+            $query->where('category', $category);
         }
 
         $perPage = match ($mode) {
