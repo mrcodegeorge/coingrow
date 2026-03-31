@@ -104,6 +104,66 @@ php artisan coingrow:refresh-insights
 php artisan serve
 ```
 
+## Server installer
+
+COINGROW now includes a server-friendly installer command and shell wrapper.
+
+### Option 1: Laravel installer command
+
+After uploading the project, configuring your web server, and setting your `.env`, run:
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan coingrow:install --force
+```
+
+Optional demo seed:
+
+```bash
+php artisan coingrow:install --force --seed-demo
+```
+
+What the installer does:
+
+- validates PHP version, required extensions, and writable paths
+- checks database connectivity
+- generates `APP_KEY` if missing
+- creates the `public/storage` symlink
+- runs migrations with `--force`
+- optionally seeds demo data
+- clears and rebuilds Laravel caches
+- writes an install receipt to `storage/app/coingrow-install.json`
+
+### Option 2: Linux server wrapper
+
+For Ubuntu or other Linux servers, you can use:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+If `.env` does not exist yet, the script will create it from `.env.example` and stop so you can fill in your production values before rerunning it.
+
+### Production notes
+
+- Point your web server document root to `public/`
+- Configure HTTPS/TLS before exposing the app publicly
+- Configure the scheduler:
+
+```bash
+* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+```
+
+- Build assets on the server or in your CI pipeline:
+
+```bash
+npm ci
+npm run build
+```
+
+- Use a strong `COINGROW_WEBHOOK_SECRET` in `.env`
+
 ## Demo account
 
 - Username: `demo`
