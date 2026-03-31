@@ -77,6 +77,8 @@ class BankingService
                 $this->applyPaymentSplits($account, $amount, $splits);
             }
 
+            app(AutomationService::class)->applyPerDepositRules($account, $amount);
+
             DB::afterCommit(function () use ($account, $amount) {
                 $this->notificationService->notify(
                     $account->user,
@@ -308,6 +310,65 @@ class BankingService
                 (float) $account->fresh()->balance,
                 "Deleted sub-account {$name}."
             );
+        });
+    }
+
+    public function moveFromMainToSubAccount(
+        Account $account,
+        SubAccount $subAccount,
+        float $amount,
+        array $context = [],
+        string $description = 'Transfer from main account to savings wallet.'
+    ): SubAccount {
+        $this->assertPositiveAmount($amount);
+
+        return DB::transaction(function () use ($account, $subAccount, $amount, $context, $description) {
+            $account->refresh();
+            $subAccount->refresh();
+
+            if ($subAccount->account_id !== $account->id) {
+                throw new InvalidArgumentException('Destination wallet does not belong to this account.');
+            }
+
+            if ((float) $account->balance < $amount) {
+                throw new InvalidArgumentException('Insufficient main account balance.');
+            }
+
+            $account->balance = round((float) $account->balance - $amount, 2);
+            $account->save();
+
+            $this->logger->log(
+                $account,
+                'main_to_sub_transfer',
+                $amount,
+                (float) $account->balance,
+                $description,
+                $subAccount,
+                array_merge($context, [
+                    'related_sub_account_id' => $subAccount->id,
+                    'tags' => array_values(array_unique(array_merge($context['tags'] ?? [], ['main_transfer_out']))),
+                ])
+            );
+
+            $subAccount->balance = round((float) $subAccount->balance + $amount, 2);
+            $subAccount->save();
+
+            $this->logger->log(
+                $account,
+                'sub_account_deposit',
+                $amount,
+                (float) $subAccount->balance,
+                $description,
+                $subAccount,
+                array_merge($context, [
+                    'related_sub_account_id' => null,
+                    'tags' => array_values(array_unique(array_merge($context['tags'] ?? [], ['main_transfer_in']))),
+                ])
+            );
+
+            $this->autoUnlockIfEligible($subAccount);
+
+            return $subAccount->fresh(['paymentSplit']);
         });
     }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MainAccountController;
 use App\Http\Controllers\NotificationController;
@@ -27,6 +28,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/main-account/deposit', [MainAccountController::class, 'deposit'])->name('main-account.deposit');
     Route::post('/main-account/withdraw', [MainAccountController::class, 'withdraw'])->name('main-account.withdraw');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('/automation/auto-savings-rules', [AutomationController::class, 'storeAutoSavingsRule'])->name('automation.rules.store');
+    Route::delete('/automation/auto-savings-rules/{rule}', [AutomationController::class, 'destroyAutoSavingsRule'])->name('automation.rules.destroy');
+    Route::post('/automation/scheduled-transactions', [AutomationController::class, 'storeScheduledTransaction'])->name('automation.scheduled.store');
+    Route::delete('/automation/scheduled-transactions/{scheduledTransaction}', [AutomationController::class, 'destroyScheduledTransaction'])->name('automation.scheduled.destroy');
 
     Route::post('/sub-accounts', [SubAccountController::class, 'store'])->name('sub-accounts.store');
     Route::post('/sub-accounts/{subAccount}/deposit', [SubAccountController::class, 'deposit'])->name('sub-accounts.deposit');

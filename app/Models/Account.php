@@ -43,4 +43,9 @@ class Account extends Model
     {
         return $this->hasOne(Transaction::class)->latestOfMany();
     }
+
+    public function autoSavingsRules(): HasMany
+    {
+        return $this->hasManyThrough(AutoSavingsRule::class, User::class, 'id', 'user_id', 'user_id', 'id');
+    }
 }

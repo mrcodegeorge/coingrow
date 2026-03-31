@@ -134,6 +134,78 @@
             </div>
         </section>
 
+        <section class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Phase 2</p>
+                        <h2 class="mt-2 text-2xl font-semibold text-white">Auto-savings rules</h2>
+                    </div>
+                    <button type="button" class="btn-primary" @click="openModal('auto-savings')">Add rule</button>
+                </div>
+
+                <div class="mt-6 space-y-3">
+                    @forelse ($autoSavingsRules as $rule)
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="font-medium text-white">{{ $rule->subAccount->name }}</div>
+                                    <div class="mt-1 text-sm text-slate-400">{{ ucfirst($rule->frequency) }} | {{ ucfirst($rule->type) }} {{ number_format((float) $rule->value, 2) }}{{ $rule->type === 'percentage' ? '%' : '' }}</div>
+                                    <div class="mt-1 text-xs text-slate-500">{{ $rule->next_run_at ? 'Next run ' . $rule->next_run_at->format('M d, Y h:i A') : 'Runs whenever a deposit lands' }}</div>
+                                </div>
+                                <form method="POST" action="{{ route('automation.rules.destroy', $rule) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-danger">Remove</button>
+                                </form>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-400">No auto-savings rules yet.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Automation queue</p>
+                        <h2 class="mt-2 text-2xl font-semibold text-white">Scheduled transactions</h2>
+                    </div>
+                    <button type="button" class="btn-primary" @click="openModal('scheduled-transaction')">Schedule</button>
+                </div>
+
+                <div class="mt-6 space-y-3">
+                    @forelse ($scheduledTransactions as $scheduledTransaction)
+                        <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <div class="font-medium text-white">{{ ucfirst($scheduledTransaction->type) }} {{ number_format((float) $scheduledTransaction->amount, 2) }}</div>
+                                    <div class="mt-1 text-sm text-slate-400">
+                                        {{ ucfirst($scheduledTransaction->frequency) }}
+                                        @if ($scheduledTransaction->destinationSubAccount)
+                                            -> {{ $scheduledTransaction->destinationSubAccount->name }}
+                                        @endif
+                                    </div>
+                                    <div class="mt-1 text-xs text-slate-500">Next run {{ $scheduledTransaction->next_run_at->format('M d, Y h:i A') }}</div>
+                                    @if ($scheduledTransaction->description)
+                                        <div class="mt-1 text-xs text-slate-500">{{ $scheduledTransaction->description }}</div>
+                                    @endif
+                                </div>
+                                <form method="POST" action="{{ route('automation.scheduled.destroy', $scheduledTransaction) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-danger">Remove</button>
+                                </form>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-400">No scheduled transactions yet.</div>
+                    @endforelse
+                </div>
+            </div>
+        </section>
+
         <section class="grid gap-6 xl:grid-cols-[1fr,0.95fr]">
             <div class="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -384,6 +456,95 @@
                     <div><label class="form-label">Note</label><textarea name="note" rows="3" class="form-input"></textarea></div>
                     <div><label class="form-label">Tags</label><input type="text" name="tags" placeholder="rebalance, rent" class="form-input"></div>
                     <button type="submit" class="btn-primary w-full">Move funds</button>
+                </form>
+            </div>
+        </div>
+
+        <div x-cloak x-show="modal === 'auto-savings'" class="modal-shell">
+            <div class="modal-card">
+                <div class="modal-head">
+                    <h3 class="modal-title">Create auto-savings rule</h3>
+                    <button type="button" class="modal-close" @click="closeModal()">Close</button>
+                </div>
+                <form method="POST" action="{{ route('automation.rules.store') }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="form-label">Target wallet</label>
+                        <select name="sub_account_id" class="form-input" required>
+                            @foreach ($subAccounts as $subAccount)
+                                <option value="{{ $subAccount->id }}">{{ $subAccount->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Rule type</label>
+                        <select name="type" class="form-input" required>
+                            @foreach ($automationOptions['ruleTypes'] as $type)
+                                <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div><label class="form-label">Value</label><input type="number" name="value" step="0.01" min="0.01" required class="form-input"></div>
+                    <div>
+                        <label class="form-label">Frequency</label>
+                        <select name="frequency" class="form-input" required>
+                            @foreach ($automationOptions['ruleFrequencies'] as $frequency)
+                                <option value="{{ $frequency }}">{{ str_replace('_', ' ', ucfirst($frequency)) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">Save rule</button>
+                </form>
+            </div>
+        </div>
+
+        <div x-cloak x-show="modal === 'scheduled-transaction'" class="modal-shell">
+            <div class="modal-card modal-card-wide">
+                <div class="modal-head">
+                    <h3 class="modal-title">Create scheduled transaction</h3>
+                    <button type="button" class="modal-close" @click="closeModal()">Close</button>
+                </div>
+                <form method="POST" action="{{ route('automation.scheduled.store') }}" class="grid gap-4 md:grid-cols-2">
+                    @csrf
+                    <div>
+                        <label class="form-label">Type</label>
+                        <select name="type" class="form-input" required>
+                            @foreach ($automationOptions['scheduledTypes'] as $type)
+                                <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Frequency</label>
+                        <select name="frequency" class="form-input" required>
+                            @foreach ($automationOptions['scheduledFrequencies'] as $frequency)
+                                <option value="{{ $frequency }}">{{ ucfirst($frequency) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Source wallet</label>
+                        <select name="source_sub_account_id" class="form-input">
+                            <option value="">Main account</option>
+                            @foreach ($subAccounts as $subAccount)
+                                <option value="{{ $subAccount->id }}">{{ $subAccount->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Destination wallet</label>
+                        <select name="destination_sub_account_id" class="form-input">
+                            <option value="">Select destination</option>
+                            @foreach ($subAccounts as $subAccount)
+                                <option value="{{ $subAccount->id }}">{{ $subAccount->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div><label class="form-label">Amount</label><input type="number" name="amount" step="0.01" min="0.01" required class="form-input"></div>
+                    <div><label class="form-label">Description</label><input type="text" name="description" class="form-input"></div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn-primary w-full">Schedule transaction</button>
+                    </div>
                 </form>
             </div>
         </div>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AutoSavingsRule;
+use App\Models\ScheduledTransaction;
 use App\Models\Transaction;
 use App\Services\AnalyticsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -40,6 +42,14 @@ class DashboardController extends Controller
             'notifications' => $user->notifications()->latest()->limit(6)->get(),
             'unreadNotifications' => $user->unreadNotifications()->count(),
             'transactionCategories' => Transaction::CATEGORY_OPTIONS,
+            'autoSavingsRules' => $user->autoSavingsRules()->with('subAccount')->latest()->get(),
+            'scheduledTransactions' => $user->scheduledTransactions()->with(['sourceSubAccount', 'destinationSubAccount'])->latest()->get(),
+            'automationOptions' => [
+                'ruleTypes' => [AutoSavingsRule::TYPE_FIXED, AutoSavingsRule::TYPE_PERCENTAGE],
+                'ruleFrequencies' => [AutoSavingsRule::FREQUENCY_DAILY, AutoSavingsRule::FREQUENCY_WEEKLY, AutoSavingsRule::FREQUENCY_PER_DEPOSIT],
+                'scheduledTypes' => [ScheduledTransaction::TYPE_DEPOSIT, ScheduledTransaction::TYPE_TRANSFER],
+                'scheduledFrequencies' => [ScheduledTransaction::FREQUENCY_DAILY, ScheduledTransaction::FREQUENCY_WEEKLY, ScheduledTransaction::FREQUENCY_MONTHLY],
+            ],
         ]);
     }
 

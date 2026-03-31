@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\AutoSavingsRule;
+use App\Models\ScheduledTransaction;
 use App\Models\User;
 use App\Services\BankingService;
 use App\Services\TransactionLoggerService;
@@ -39,6 +41,26 @@ class DemoDataSeeder extends Seeder
             $bankingService->withdrawFromSubAccount($rent->fresh(), 100, ['category' => 'rent', 'tags' => ['payment']], 'Partial rent payment.');
             $bankingService->depositToSubAccount($travel, 700, ['category' => 'savings', 'tags' => ['travel_goal']], 'Trip planning contribution.');
             $bankingService->transferBetweenSubAccounts($rent->fresh(), $travel->fresh(), 150, ['category' => 'transfer', 'note' => 'Rebalanced rent reserve into travel fund.', 'tags' => ['rebalance']]);
+
+            AutoSavingsRule::create([
+                'user_id' => $user->id,
+                'sub_account_id' => $emergency->id,
+                'type' => AutoSavingsRule::TYPE_PERCENTAGE,
+                'value' => 10,
+                'frequency' => AutoSavingsRule::FREQUENCY_PER_DEPOSIT,
+                'active' => true,
+            ]);
+
+            ScheduledTransaction::create([
+                'user_id' => $user->id,
+                'type' => ScheduledTransaction::TYPE_DEPOSIT,
+                'destination_sub_account_id' => $rent->id,
+                'amount' => 120,
+                'frequency' => ScheduledTransaction::FREQUENCY_MONTHLY,
+                'next_run_at' => now()->addMonth(),
+                'active' => true,
+                'description' => 'Monthly rent reserve top-up',
+            ]);
         });
     }
 }
