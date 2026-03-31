@@ -145,6 +145,84 @@ chmod +x install.sh
 
 If `.env` does not exist yet, the script will create it from `.env.example` and stop so you can fill in your production values before rerunning it.
 
+### Option 3: One-click deployment
+
+COINGROW now includes a deployment wrapper that:
+
+- installs Composer dependencies
+- builds frontend assets
+- runs the COINGROW installer
+- fixes writable permissions for `storage/` and `bootstrap/cache/`
+- installs the Laravel scheduler cron entry
+
+Usage:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Useful deployment flags:
+
+```bash
+SEED_DEMO=1 ./deploy.sh
+SKIP_ASSETS=1 ./deploy.sh
+SKIP_CRON=1 ./deploy.sh
+WWW_USER=www-data ./deploy.sh
+CRON_USER=www-data ./deploy.sh
+```
+
+If you run the script as `root`, it will also `chown` writable Laravel paths to `WWW_USER`.
+
+## Web server configs
+
+Production-ready starter configs are included in the `deploy/` directory.
+
+### Nginx
+
+Template:
+
+- `deploy/nginx/coingrow.conf`
+
+Typical install on Ubuntu:
+
+```bash
+sudo cp deploy/nginx/coingrow.conf /etc/nginx/sites-available/coingrow
+sudo ln -s /etc/nginx/sites-available/coingrow /etc/nginx/sites-enabled/coingrow
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Before enabling it, update:
+
+- `server_name`
+- project path in `root`
+- PHP-FPM socket path if your server uses a different PHP version
+
+### Apache
+
+Templates:
+
+- `deploy/apache/coingrow-vhost.conf`
+- `public/.htaccess`
+
+Typical install on Ubuntu:
+
+```bash
+sudo cp deploy/apache/coingrow-vhost.conf /etc/apache2/sites-available/coingrow.conf
+sudo a2enmod rewrite
+sudo a2ensite coingrow.conf
+sudo apachectl configtest
+sudo systemctl reload apache2
+```
+
+Before enabling it, update:
+
+- `ServerName`
+- project path in `DocumentRoot`
+
+Apache uses the Laravel rewrite rules already present in `public/.htaccess`.
+
 ### Production notes
 
 - Point your web server document root to `public/`
